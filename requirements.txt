@@ -1,4 +1,5 @@
 pytest
 langchain-core
+langchain_ollama
 langgraph
 requests
