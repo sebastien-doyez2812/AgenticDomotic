@@ -1,5 +1,5 @@
-from typing_extensions import TypeDict
+from typing_extensions import TypedDict
 
-class State(TypeDict):
+class State(TypedDict):
     graph_state: str
     

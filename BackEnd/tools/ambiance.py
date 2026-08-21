@@ -1,4 +1,7 @@
-def set_musique(style="default", volume=50):
+from langchain_core.tools import tool
+
+@tool
+def set_music(style="default", volume=50):
     """
     Function to set the music volume.
     """
