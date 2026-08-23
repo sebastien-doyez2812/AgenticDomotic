@@ -5,6 +5,7 @@
 
 const char* ssid = "YOUR_SSID";
 const char* pwd  = "YOUR_PWD ";
+const int MOSFET_GATE_INPUT = 14; // D5
 
 WiFiServer server(1234);
 LiquidCrystal_I2C lcd(0x20, 16, 2);
@@ -32,6 +33,8 @@ void setup() {
 
   lcd.setCursor(0, 1);
   lcd.print( WiFi.localIP());
+  pinMode(MOSFET_GATE_INPUT, OUTPUT);
+  digitalWrite(MOSFET_GATE_INPUT, LOW);
 }
 
 void loop() {
@@ -47,6 +50,9 @@ void loop() {
         if (data == 1)
         {
           Serial.println("Water Plant!");
+          digitalWrite(MOSFET_GATE_INPUT, HIGH);
+          delay(3000);
+          digitalWrite(MOSFET_GATE_INPUT, LOW);
         }
       }
     }
