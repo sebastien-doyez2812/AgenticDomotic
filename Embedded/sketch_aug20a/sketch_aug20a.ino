@@ -25,10 +25,30 @@ void setup() {
   Serial.print("Adresse IP : ");
   Serial.println(WiFi.localIP());
 
-// Config I2C:
+  lcd.init();                      
+  lcd.backlight();                 
+  lcd.setCursor(0, 0);
+  lcd.print("WiFi OK !\n");
+
+  lcd.setCursor(0, 1);
+  lcd.print( WiFi.localIP());
 }
 
 void loop() {
-  // put your main code here, to run repeatedly:
-
+  WiFiClient client = server.available(); 
+  if (client)
+  {
+    Serial.println("Client connected!");
+    while(client.connected())
+    {
+      if (client.available() > 0)
+      {
+        uint8_t data = client.read();
+        if (data == 1)
+        {
+          Serial.println("Water Plant!");
+        }
+      }
+    }
+  }  
 }
