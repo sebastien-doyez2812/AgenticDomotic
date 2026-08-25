@@ -8,7 +8,6 @@ from state import State
 from prompt.system import SYSTEM_PROMPT
 
 
-
 def agent_factory(custom_model = None):
     tools = [set_music, plant_watering]
     model = custom_model or ChatOllama(model="gemma4:latest ").bind_tools(tools)
@@ -34,17 +33,18 @@ def agent_factory(custom_model = None):
     app = workflow.compile()
     return app
 
-# À la fin de BackEnd/main.py
-# if __name__ == "__main__":
-#     inputs = {
-#     "graph_state": [
-#         HumanMessage(content="Allume la musique jazz avec un volume de 5")
-#     ]
-#     }
-#     print("--- Début de l'exécution ---")
-#     # app.invoke(inputs)
-#     for event in app.stream(inputs):
-#         for node_name, node_output in event.items():
-#             print(f"\n[Nœud exécuté : {node_name}]")
-#             print("Sortie :", node_output)
-#     print("\n--- Fin de l'exécution ---")
+# To test the back end in real life:
+if __name__ == "__main__":
+    app = agent_factory()
+    inputs = {
+    "graph_state": [
+        HumanMessage(content="Pourrais-tu arroser les plantes s'il te plaît ?")
+    ]
+    }
+    print("--- Beginning of the execution: ---")
+    # app.invoke(inputs)
+    for event in app.stream(inputs):
+        for node_name, node_output in event.items():
+            print(f"\n[Node executed : {node_name}]")
+            print("Output :", node_output)
+    print("\n--- End of execution ---")
