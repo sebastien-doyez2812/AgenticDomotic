@@ -35,6 +35,8 @@ void setup() {
   lcd.print( WiFi.localIP());
   pinMode(MOSFET_GATE_INPUT, OUTPUT);
   digitalWrite(MOSFET_GATE_INPUT, LOW);
+
+  server.begin();
 }
 
 void loop() {
@@ -42,19 +44,29 @@ void loop() {
   if (client)
   {
     Serial.println("Client connected!");
-    while(client.connected())
+    unsigned long timeout = millis();
+    while(client.connected() && client.available()== 0)
     {
-      if (client.available() > 0)
+      if (millis() - timeout > 1500)
       {
-        uint8_t data = client.read();
-        if (data == 1)
-        {
-          Serial.println("Water Plant!");
-          digitalWrite(MOSFET_GATE_INPUT, HIGH);
-          delay(3000);
-          digitalWrite(MOSFET_GATE_INPUT, LOW);
-        }
+        break;
       }
+      yield(); // Avoid Watchdogs issues.
+    }
+    if (client.available() > 0)
+    {
+      uint8_t data = client.read();
+      Serial.print("Data received: ");
+      Serial.println(data);
+
+      if (data == 1)
+      {
+        Serial.println("Water Plant!");
+        digitalWrite(MOSFET_GATE_INPUT, HIGH);
+        delay(3000);
+        digitalWrite(MOSFET_GATE_INPUT, LOW);
+      }
+      client.stop(); 
     }
   }  
 }
