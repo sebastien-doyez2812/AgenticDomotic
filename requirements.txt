@@ -3,3 +3,5 @@ langchain-core
 langchain_ollama
 langgraph
 requests
+SpeechRecognition
+pyttsx3
