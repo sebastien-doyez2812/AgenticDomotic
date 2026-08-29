@@ -4,3 +4,4 @@ from langgraph.graph.message import add_messages
 
 class State(TypedDict):
     graph_state: Annotated[list[AnyMessage], add_messages]
+    intent_result: str 
