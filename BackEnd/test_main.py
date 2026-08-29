@@ -1,5 +1,5 @@
 from unittest.mock import MagicMock
-from langchain_core.messages import AIMessage, HumanMessage, ToolMessage
+from langchain_core.messages import AIMessage, HumanMessage
 import os
 import sys
 
@@ -7,30 +7,20 @@ from main import agent_factory
 
 
 def test_ask_agent_for_music():
-  fake_model = MagicMock()
-  fake_model.invoke.side_effect = [
-      AIMessage(
-          content="",
-          tool_calls=[{
-              "name": "set_music",
-              "args": {"style": "jazz", "volume": "5"},
-              "id": "call_12345",
-              "type": "tool_call",
-          }],
-      ),
-      AIMessage(content="C'est fait, la musique jazz est lancée !"),
-  ]
+    fake_model = MagicMock()
+    # Retourne un unique AIMessage et non une liste
+    fake_model.invoke.return_value = AIMessage(content='{"intent": "music" }')
 
-  app = agent_factory(custom_model=fake_model)
+    app = agent_factory(custom_model=fake_model)
 
-  initial_state = {
-      "graph_state": [HumanMessage(content="Allume la musique jazz")]
-  }
-  result = app.invoke(initial_state)
+    initial_state = {
+        "graph_state": [HumanMessage(content="Allume la musique jazz")]
+    }
+    result = app.invoke(initial_state)
 
-  messages = result["graph_state"]
-  tool_messages = [msg for msg in messages if isinstance(msg, ToolMessage)]
-
-  assert len(tool_messages) > 0
-  assert tool_messages[0].name == "set_music"
-  assert tool_messages[0].tool_call_id == "call_12345"
+    assert result["intent_result"] == "music"
+    messages = result["graph_state"]
+    ai_messages = [msg for msg in messages if isinstance(msg, AIMessage)]
+    
+    assert len(ai_messages) > 0
+    assert "music" in ai_messages[-1].content.lower()
