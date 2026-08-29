@@ -1,17 +1,14 @@
 import socket
-from langchain_core.tools import tool
 
 # TODO
 IP_ADDRESS="192.168.2.14"
 PORT= 1234
 
-
-@tool
 def plant_watering():
     """
     Function to simulate plant watering.
     """
-
+    print("Watering the plants...")
     try:
         s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         s.connect((IP_ADDRESS, PORT))
@@ -26,4 +23,4 @@ def plant_watering():
 
 if __name__ == "__main__":
     # Test the plant_watering function
-    result = plant_watering.invoke({})
+    result = plant_watering()
