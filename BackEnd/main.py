@@ -13,8 +13,7 @@ import pyttsx3
 
 
 def agent_factory(custom_model = None):
-    tools = [set_music, plant_watering]
-    model = custom_model or ChatOllama(model="gemma4:latest").bind_tools(tools)
+    model = custom_model or ChatOllama(model="gemma4:latest")
 
     def intent_condition(state: State): 
         last_message = state["graph_state"][-1].content
