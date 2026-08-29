@@ -1,7 +1,9 @@
+import json
+
 from langchain_ollama import ChatOllama
 from langgraph.graph import END, START, StateGraph
 from langgraph.prebuilt import ToolNode, tools_condition
-from langchain_core.messages import AIMessage, HumanMessage
+from langchain_core.messages import AIMessage, HumanMessage, SystemMessage
 from tools.ambiance import set_music
 from tools.plant_watering import plant_watering
 from state import State
@@ -14,23 +16,58 @@ def agent_factory(custom_model = None):
     tools = [set_music, plant_watering]
     model = custom_model or ChatOllama(model="gemma4:latest").bind_tools(tools)
 
-    def call_model(state: State):
+    def intent_condition(state: State): 
+        last_message = state["graph_state"][-1].content
+
+        if last_message:
+            ROUTER_PROMPT = SystemMessage(content="""Tu es un routeur domotique. Analyse la demande et réponds UNIQUEMENT par un JSON valide sous la format :
+            {"intent": "music" | "watering" | "chat"}
+            - "music" si l'utilisateur veut lancer de la musique, de l'ambiance, des sons.
+            - "watering" si l'utilisateur veut arroser les plantes ou lancer la pompe.
+            - "chat" pour toute autre discussion ou question générale.""")
+
+            response = model.invoke([ROUTER_PROMPT] + state["graph_state"])
+            try:
+                content = response.content.replace("```json", "").replace("```", "").strip()
+                decision = json.loads(content)
+                intent = decision.get("intent", "chat")
+            except Exception as e:
+                intent = "chat"
+            
+            return {"intent_result": intent}
+
+    def handler_music(state: State):
+        user_text = state["graph_state"][-1].content
+        tool_result = set_music(user_text)
+        return {"graph_state": [AIMessage(content=f"J'ai lancé la musique." if tool_result else "Une erreur s'est produite lors de la lecture de la musique.")]}
+
+    def handler_watering(state: State):
+        tool_result = plant_watering()
+        return {"graph_state": [AIMessage(content=f"J'ai lancé l'arrosage" if tool_result else "Une erreur s'est produite lors de l'arrosage.")]}
+
+    def handler_chat(state: State):
         messages = [SYSTEM_PROMPT] + state["graph_state"]
         response = model.invoke(messages)
         return {"graph_state": [response]}
 
+    def route_decision(state: State):
+        return state.get("intent_result", "chat")
+        
     workflow = StateGraph(State)
-    workflow.add_node("agent", call_model)
-    workflow.add_node("tools", ToolNode(tools, messages_key="graph_state"))
-
-    workflow.add_edge(START, "agent")
+    workflow.add_node("router", intent_condition)
+    workflow.add_node("watering", handler_watering)
+    workflow.add_node("music", handler_music)
+    workflow.add_node("chat", handler_chat)
+    
+    workflow.add_edge(START, "router")
     workflow.add_conditional_edges(
-        "agent",
-        lambda state: tools_condition(state, messages_key="graph_state"),
-        {"tools": "tools", "__end__": END},
+        "router",
+        lambda state: route_decision(state),
+        {"watering": "watering", "music": "music", "chat": "chat"},
     )
-
-    workflow.add_edge("tools", "agent")
+    workflow.add_edge("watering", END)
+    workflow.add_edge("music", END)
+    workflow.add_edge("chat", END)
 
     app = workflow.compile()
     return app
@@ -71,8 +108,8 @@ if __name__ == "__main__":
             config = {"recursive_limit": 3, "max_iterations": 2}
             for event in app.stream(inputs, config= config):
                 for node_name, node_output in event.items():
-                    # print(f"\n[Node executed : {node_name}]")
-                    # print("Output :", node_output)
+                    print(f"\n[Node executed : {node_name}]")
+                    print("Output :", node_output)
                     if "graph_state" in node_output:
                         conversation_state = node_output  # Update the conversation state with the latest output
                           # Update the conversation state with the latest output

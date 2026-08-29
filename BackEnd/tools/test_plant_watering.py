@@ -5,7 +5,7 @@ from unittest.mock import patch, MagicMock
 def test_plant_watering(mock_socket_class):
     mock_socket_instance = MagicMock()
     mock_socket_class.return_value = mock_socket_instance
-    result = plant_watering.invoke({})
+    result = plant_watering()
     assert result is True
 
     mock_socket_instance.connect.assert_called_once_with(("192.168.2.14", 1234))
