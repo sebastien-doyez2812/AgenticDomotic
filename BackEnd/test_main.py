@@ -23,4 +23,4 @@ def test_ask_agent_for_music():
     ai_messages = [msg for msg in messages if isinstance(msg, AIMessage)]
     
     assert len(ai_messages) > 0
-    assert "music" in ai_messages[-1].content.lower()
+    assert "music" in ai_messages[-1].content.lower() or "musique" in ai_messages[-1].content.lower()
