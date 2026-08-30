@@ -1,5 +1,5 @@
+import asyncio
 import json
-
 from langchain_ollama import ChatOllama
 from langgraph.graph import END, START, StateGraph
 from langgraph.prebuilt import ToolNode, tools_condition
@@ -10,7 +10,15 @@ from state import State
 from prompt.system import SYSTEM_PROMPT
 import speech_recognition as sr
 import pyttsx3
+from fastapi import FastAPI, WebSocket, WebSocketDisconnect
+from fastapi.middleware.cors import CORSMiddleware
+import uvicorn
+from queue import Queue
+from pydantic import BaseModel
 
+class BasicInteraction(BaseModel):
+    user_message: str
+    ai_message: str
 
 def agent_factory(custom_model = None):
     model = custom_model or ChatOllama(model="gemma4:latest")
@@ -71,55 +79,77 @@ def agent_factory(custom_model = None):
     app = workflow.compile()
     return app
 
-def make_agent_speak(engine, conversation_state):
-    if conversation_state["graph_state"]:
-        last_response = conversation_state["graph_state"][-1]
-        if isinstance(last_response, AIMessage):
-            print("Agent response:", last_response.content)
-            engine.say(last_response.content)
-            engine.runAndWait()
-
 if __name__ == "__main__":
-    app =  agent_factory()
-    engine = pyttsx3.init()
-    r = sr.Recognizer()
+    app = FastAPI()
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=["*"],
+        allow_credentials=True,
+        allow_methods=["*"],
+        allow_headers=["*"],
+    )
+    
+    agent =  agent_factory()
 
-    conversation_state = {"graph_state": []}
+    async def agent_worker(agent, websocket, message_queue):
+        chat_history = []
+        while True:
+            try:
+                user_input = await message_queue.get()
+                # user_input = await websocket.receive_text()
+                print (f"Received from WebSocket: {user_input}")
 
-    while(True):
-        
-        with sr.Microphone() as source:
-            print("Agent is listening...")
-            r.adjust_for_ambient_noise(source)
-            audio = r.listen(source)
+                inputs = {
+                    "graph_state": [
+                        HumanMessage(content=user_input)
+                    ]
+                }
+                # print("--- Beginning of execution ---")
 
+                config = {"recursive_limit": 3, "max_iterations": 2}
+                conversation_state = {"graph_state": []}
+
+                for event in agent.stream(inputs, config= config):
+                    for node_name, node_output in event.items():
+                        # print(f"\n[Node executed : {node_name}]")
+                        # print("Output :", node_output)
+                        if "graph_state" in node_output:
+                            conversation_state = node_output  # Update the conversation state with the latest output
+                            # Update the conversation state with the latest output
+                # print("\n--- End of execution ---")
+
+                # Get last AI response:
+                if conversation_state["graph_state"]:
+                        last_response = conversation_state["graph_state"][-1]
+                        if isinstance(last_response, AIMessage):
+                            ai_text = last_response.content
+
+                chat_history.append(BasicInteraction(user_message=user_input, ai_message=ai_text))
+                await websocket.send_json({
+                    "user_message": user_input,
+                    "ai_message": ai_text
+                })
+            except Exception as e:
+                print(f"Error occurred in agent workflow: {e}")
+
+    @app.websocket("/ws")
+    async def websocket_endpoint(websocket: WebSocket):
+        message_queue = asyncio.Queue()
+        await websocket.accept()
+        print("WebSocket connection established.")
+        agent = agent_factory()
+
+        worker_task = asyncio.create_task(agent_worker(agent, websocket, message_queue))
         try:
-            user_input = r.recognize_google(audio, language="fr-FR")
-            print("You said :", user_input)
+            while True:
+                user_input = await websocket.receive_text()
+                await message_queue.put(user_input)
 
-            inputs = {
-                "graph_state": [
-                    HumanMessage(content=user_input)
-                ]
-            }
-            print("--- Beginning of execution ---")
+        except WebSocketDisconnect:
+            print("Client disconnected.")
+            worker_task.cancel()
+        except Exception as e:
+            print(f"Error occurred: {e}")
+            worker_task.cancel()
 
-            config = {"recursive_limit": 3, "max_iterations": 2}
-            for event in app.stream(inputs, config= config):
-                for node_name, node_output in event.items():
-                    print(f"\n[Node executed : {node_name}]")
-                    print("Output :", node_output)
-                    if "graph_state" in node_output:
-                        conversation_state = node_output  # Update the conversation state with the latest output
-                          # Update the conversation state with the latest output
-            print("\n--- End of execution ---")
-
-            make_agent_speak(engine, conversation_state)
-
-        except sr.UnknownValueError:
-            print("Google Speech Recognition could not understand the audio.")
-        except sr.RequestError as e:
-            print(f"Error occurred while requesting results from Google Speech Recognition; {e}")
-        except KeyboardInterrupt:
-            print("Exiting the program.")
-            break
+    uvicorn.run(app, host="127.0.0.1", port=9000)
