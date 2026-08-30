@@ -1,0 +1,75 @@
+body {
+    margin: 0;
+    padding: 0;
+    background-color: #050b14;
+    color: #ffffff;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    width: 100vw;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    overflow: hidden;
+}
+
+.reactor-container {
+    position: relative;
+    width: 250px;
+    height: 250px;
+}
+
+.core {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 50px;
+    height: 50px;
+    background-color: #00f0ff;
+    border-radius: 50%;
+    box-shadow: 0 0 20px #00f0ff, 0 0 40px #00f0ff;
+    transform: translate(-50%, -50%) scale(1);
+    animation: pulse 2s infinite ease-in-out;
+    z-index: 2;
+}
+
+/* L'anneau en pointillé */
+.ring {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 180px;
+    height: 180px;
+    margin-top: -90px;
+    margin-left: -90px;
+    border: 2px dashed rgba(0, 240, 255, 0.4);
+    border-radius: 50%;
+    animation: spin 10s linear infinite;
+    z-index: 1;
+    box-sizing: content-box;
+}
+
+.chat-container {
+    margin-top: 500px; 
+    width: 100%;
+    text-align: center;
+}
+
+.prompt {
+    font-size: 2em;
+    color: #eef0f2;
+    font-style: italic;
+    margin-bottom: 10px;
+}
+
+/* Animations */
+@keyframes pulse {
+    0% { transform: translate(-50%, -50%) scale(0.9); box-shadow: 0 0 15px #00f0ff; }
+    50% { transform: translate(-50%, -50%) scale(1.1); box-shadow: 0 0 30px #00f0ff, 0 0 50px #00f0ff; }
+    100% { transform: translate(-50%, -50%) scale(0.9); box-shadow: 0 0 15px #00f0ff; }
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
