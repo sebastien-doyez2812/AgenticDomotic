@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Agentic Domotic</title>
+    <link rel="icon" href="data:,">
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+    <!-- First Page: -->
+    <div id="landing-view" class="view">
+        <div class="reactor-container">
+            <div class="ring"></div>
+            <div class="core"></div>
+        </div>
+        <div class="prompt">Speak of move the mouse to initialize the interface</div>
+    </div>
+
+    <!-- PAGE 2 : -->
+    <div id="dashboard-view" class="view">
+        <div class="dashboard-header">
+            <div class="mini-reactor">
+                <div class="mini-ring"></div>
+                <div class="mini-core"></div>
+            </div>
+            <div>
+                <h2>AI Agentic Domotic</h2>
+                <div id="status-bar">System ready - Waiting</div>
+            </div>
+        </div>
+        
+        <div id="chat-box"></div>
+        
+        <div class="input-container">
+            <input type="text" id="messageInput" placeholder="Enter a command or activate listening..." onkeypress="checkEnter(event)">
+            <button id="continuousBtn" onclick="toggleContinuousMode()">🎙️ Continuous Mode</button>
+            <button onclick="sendMessage()">Send</button>
+        </div>
+    </div>
+    <script src="/static/script.js"></script>
+</body>
+</html>
