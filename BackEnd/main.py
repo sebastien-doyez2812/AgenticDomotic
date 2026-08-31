@@ -1,5 +1,7 @@
 import asyncio
 import json
+import os
+from fastapi.responses import FileResponse
 from langchain_ollama import ChatOllama
 from langgraph.graph import END, START, StateGraph
 from langgraph.prebuilt import ToolNode, tools_condition
@@ -131,13 +133,17 @@ if __name__ == "__main__":
                 })
             except Exception as e:
                 print(f"Error occurred in agent workflow: {e}")
+    
+    @app.get("/")
+    async def get_index():
+        html_path = os.path.join(os.path.dirname(__file__), "../Frontend/index.html")
+        return FileResponse(html_path)
 
     @app.websocket("/ws")
     async def websocket_endpoint(websocket: WebSocket):
         message_queue = asyncio.Queue()
         await websocket.accept()
         print("WebSocket connection established.")
-        agent = agent_factory()
 
         worker_task = asyncio.create_task(agent_worker(agent, websocket, message_queue))
         try:
