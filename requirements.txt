@@ -5,3 +5,5 @@ langgraph
 requests
 SpeechRecognition
 pyttsx3
+fastapi
+uvicorn
