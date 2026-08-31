@@ -17,6 +17,7 @@ from fastapi.middleware.cors import CORSMiddleware
 import uvicorn
 from queue import Queue
 from pydantic import BaseModel
+from fastapi.staticfiles import StaticFiles
 
 class BasicInteraction(BaseModel):
     user_message: str
@@ -90,7 +91,7 @@ if __name__ == "__main__":
         allow_methods=["*"],
         allow_headers=["*"],
     )
-    
+    app.mount("/static", StaticFiles(directory=os.path.join(os.path.dirname(__file__), "../Frontend")), name="static")
     agent =  agent_factory()
 
     async def agent_worker(agent, websocket, message_queue):
